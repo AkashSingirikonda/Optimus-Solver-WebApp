@@ -19,7 +19,7 @@ What you need:
 - A [firestore project](https://firebase.google.com/docs/firestore/quickstart) with a [service account](https://firebase.google.com/support/guides/service-accounts).
 
 Steps:
-0. Create a Firestore project on Firebase, and download a json credential key for it. Here are the steps:
+0. Create a Firestore project on Firebase, enable authentication and storage, and download a json credential key for it. Here are the steps:
 - Go to the Firebase Console and select your Firebase project (Create one if you don't have one)
 - Open Project Settings: In the Firebase console, click on the gear icon next to Project Overview in the sidebar. Select Project settings from the dropdown.
 - Navigate to Service Accounts: In the Project settings page, click on the Service accounts tab at the top
@@ -31,7 +31,7 @@ You’ll need this JSON file to authenticate your Firebase Admin SDK requests.
 2. Edit [the frontend .env.example](https://github.com/OptiMUS-optimization-modeling/Optimus-Solver-WebApp/blob/main/interface/.env.example) file and add your frontend firebase credentials (You can get one via firebase dashboard > settings > general > add app > web app).
 3. Rename both `.env.example` files to `.env`
 4. Open new terminals (so .env files take effect), create a new virtual environment, and run `pip install -r requirements.txt` to install the requirements.
-5. Start the flask backend using `flask run`.
+5. Start the flask backend using `flask run`. (You may have to modify $PATH, $PYTHONPATH, and/or $FLASKAPP to get this to work)
 6. Install and start the react frontend:
 
    ```

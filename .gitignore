@@ -10,3 +10,5 @@ admin_creds.json
 admin_creds_base64.txt
 myvenv/
 1/
+__pycache__/
+api/app/.DS_Store

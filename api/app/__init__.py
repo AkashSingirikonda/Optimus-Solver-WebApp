@@ -24,6 +24,7 @@ from .utils.setup import get_clients
 
 # List of allowed origins
 origins = [
+    "http://127.0.0.1:3000",  # Local development frontend address (Works on Mac)
     "http://localhost:3000",  # Local development frontend address
     "https://optimus-cme-front.vercel.app",  # Production frontend address
     "https://optimus-cme-front-teshnizi.vercel.app",  # Production frontend address

@@ -18,7 +18,11 @@ def get_clients(config):
 
     cred = credentials.Certificate(firebase_creds)
 
-    firebase_admin.initialize_app(cred)
+    # Ensure the app only initializes once
+    try:
+        firebase_app = firebase_admin.get_app()
+    except ValueError as ve:
+        firebase_admin.initialize_app(cred)
 
     db = firestore.client()
 
