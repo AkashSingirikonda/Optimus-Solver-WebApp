@@ -4,5 +4,8 @@
   },
   "cvxpy": {
     "import_code": "import cvxpy as cp"
+  },
+  "minizinc": {
+    "import_code": "from minizinc import Instance, Model, Solver"
   }
 }
