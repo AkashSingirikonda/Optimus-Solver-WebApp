@@ -10,17 +10,16 @@ from api.app.functionalities.clauses.extract_clauses import extract_clauses
 from api.app.functionalities.formulation.formulate_clause import formulate_clause
 from api.app.functionalities.coding.code_clause import code_clause
 from api.app.functionalities.debugging.fix_code import fix_code
-from auto_testing_helper_functions.auto_testing_helper_functions_gurobipy import (
-    synthesize_code_cvxpy,
+from auto_testing_helper_functions.auto_testing_helper_functions_minizinc import (
+    synthesize_code_minizinc,
     execute_and_debug,
 )
 
 
 ### Helper functions
 def testing_for_one(state, dir):
-
-    model = "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo"
-    #  model = "o1-mini"
+    # model = "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo"
+    model = "o1-mini"
 
     test_dir = os.path.join(dir, f"test_results")
     if not os.path.exists(test_dir):
@@ -121,7 +120,7 @@ def testing_for_one(state, dir):
         "constraints": cons_data_code_list,
         "objective": obj_data_code,
     }
-    synthesize_code_cvxpy(code_synthesis_data, test_dir)
+    synthesize_code_minizinc(code_synthesis_data, test_dir)
 
     ## State 6: Run the code
     execute_and_debug(test_dir)
@@ -145,7 +144,7 @@ def check_solution(dir):
 
 
 ### Main
-SOLVER = "gurobipy"
+SOLVER = "minizinc"
 TESTPATH = "."
 
 
