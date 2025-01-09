@@ -25,6 +25,7 @@ Here is an example of code to add the objective, $\\max \\sum_{{i=1}}^{{N}} pric
 
 solve maximize sum(i in 1..N) (price[i] * x[i]);
 
+Ensure that the code generated for the objective is a single line and includes no constraints.
 Here is an example of code to add a constraint, $\\forall i, SalesVolumes[i] \leq MaxProductionVolumes[i]$ where the shape of both SalesVolumes and MaxProductionVolumes is [N], to the model:
 
 constraint SalesVolumes <= MaxProductionVolumes;

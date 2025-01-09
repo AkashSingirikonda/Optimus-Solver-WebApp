@@ -1,4 +1,5 @@
 import os
+import json
 import subprocess
 from api.app.functionalities.debugging.fix_code import fix_code
 
@@ -28,7 +29,7 @@ def get_var_code(symbol, var_type, shape):
     elif var_type == "continuous":
         var_declaration = f"{array_type}var float: {symbol};"
 
-    return f"model.add_string(\"{var_declaration}\")"
+    return f"model.add_string(\'{var_declaration}\')"
 
 # Synthesize the code
 def synthesize_code_minizinc(data, dir):
@@ -44,6 +45,14 @@ import numpy as np
 
 import minizinc
 
+def get_param_type(param):
+    if isinstance(param, int):
+        return "int"
+    elif isinstance(param, float):
+        return "float"
+    else:
+        return "ERROR"
+
 with open("parameters.json", "r") as f:
     parameters = json.load(f)
 
@@ -52,27 +61,32 @@ model = minizinc.Model()
     code = []
     code.append(prep_code)
     code.append("\n\n### Define the parameters\n")
-    ## Debug:
-    print("####")
-    print(data["parameters"].items())
+
+    # Assigning parameters from JSON
+    for symbol, p in data["parameters"].items():
+        shape = p["shape"]
+        code.append(f'{symbol} = parameters["{symbol}"] # shape: {p["shape"]}, definition: {p["definition"]}')
+
     for symbol, p in data["parameters"].items():
         shape = p["shape"]
         # definition = p["definition"]
         if len(shape) == 0:
             # Scalar parameter
-            mzn_type = "float"
-            param_string = f"{mzn_type}: {symbol};"
+            mzn_type = f"get_param_type({symbol})"
+            param_string = f"{{{mzn_type}}}: {symbol};"
         else:
             # Array parameter
             # Check if shape contains symbols or numbers
             dimensions = ", ".join([
                 f"1..{s}" if isinstance(s, str) else f"1..{s}" for s in shape
             ])
-            element_type = "float"
-            param_string = f"array[{dimensions}] of {element_type}: {symbol};"
+            element_type = f"get_param_type({symbol}[0])"
+            param_string = f"array[{dimensions}] of {{{element_type}}}: {symbol};"
             
         # Add instance assignment code
-        a = "model.add_string('" + param_string + "\')" + "\n"
+        begin_string = "model.add_string(f\'"
+        end_string = "\')\n"
+        a = begin_string + param_string + end_string
         code.append(a)
     
     code.append("\n\n### Define the variables\n")
@@ -82,30 +96,53 @@ model = minizinc.Model()
     code.append("\n\n### Define the constraints\n")
     for c in constraints:
         a = c['code']
-        code.append(f"model.add_string('{a}')")
+        code.append(f"model.add_string(\'\'\'{a}\'\'\')")
     
     code.append("\n\n### Define the objective\n")
     a = objective["code"]
-    code.append(f"model.add_string(\'{a}\')")
+    code.append(f"model.add_string(\'{a}\')\n")
 
     # Select a solver (To optimize)
-    code.append(f"\n# Instantiate Model\nsolver = minizinc.Solver.lookup(\"highs\")\n")
+    code.append(f"# Instantiate Model\nsolver = minizinc.Solver.lookup(\"highs\")\n")
 
     # Creating model instance
-    code.append(f"\n# Create Instance\ninstance = minizinc.Instance(solver, model)\n")
+    code.append(f"# Create Instance\ninstance = minizinc.Instance(solver, model)\n")
 
     # Adding instance parameters
     for symbol, p in data["parameters"].items():
         shape = p["shape"]
-        code.append(f'{symbol} = parameters["{symbol}"] # shape: {p["shape"]}, definition: {p["definition"]}')
-        code.append(f"instance['{shape}'] = {shape}\n")
+        code.append(f"instance['{symbol}'] = {symbol}\n")
     
     # Optimize the model
-    code.append("\n\n### Optimize the model\n")
-    code.append(f"\n# Optimize model\nresult = instance.solve()\n")
+    code.append("\n### Optimize the model\n")
+    code.append(f"result = instance.solve()\n")
 
     # Take care of model output!
 
+    code.append("""
+if result.solution is not None:
+    solution_vars = result.solution.__dict__
+    solution_vars.pop("_checker")
+    solution_data = {
+        "objective": result.objective,  # Objective value if applicable
+        "vars": solution_vars,   # Decision variables and their values
+        "status": str(result.status),  # Solver status
+    }
+    solution_data['vars'].pop('objective')
+    # Write to a file
+    with open("output_solution.txt", "w") as f:
+        json.dump(solution_data, f, indent=4)
+    print(result.objective)
+else:
+    with open("output_solution.txt", "w") as f:
+        f.write(result.status)
+    print(result.status)
+                
+with open("output_statistics.txt", "w") as f:
+    f.write(json.dumps(result.statistics, indent=4, sort_keys=True, default=str))
+"""
+    )
+    # 
         #
 #    code.append(
 #      """
@@ -122,6 +159,7 @@ model = minizinc.Model()
 
     with open(os.path.join(dir, "code.py"), "w") as f:
         f.write("\n".join(code))
+    return
 
 ## Execute the code
 def execute_code(dir, code_filename):
@@ -144,7 +182,6 @@ def execute_code(dir, code_filename):
 
 ## Execute the code with debug support
 def execute_and_debug(dir, max_tries=3):
-
     code_filename = "code.py"
     with open(os.path.join(dir, code_filename), "r") as f:
         code = f.read()
